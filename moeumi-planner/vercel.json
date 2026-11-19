@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/planner",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/library",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/archive",
+      "destination": "/index.html"
+    }
+  ]
+}
