@@ -11,6 +11,7 @@
     ],
     "strict": true,
     "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "skipLibCheck": true,
     "esModuleInterop": true
   },
