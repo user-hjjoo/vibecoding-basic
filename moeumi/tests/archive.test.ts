@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dateValue, compare, today } from "../src/lib/dates.ts";
+import { dateValue, compare, deadlineLabel, today } from "../src/lib/dates.ts";
 import { rowSchema, blank } from "../shared/schemas.ts";
 import { extract } from "../server/extract.ts";
 test("invalid dates and KST midnight", () => {
@@ -14,12 +14,12 @@ test("deadline groups", () => {
   const expected = [
     "2099-04-01",
     "2099-04-02",
-    "2000-03-01",
-    "2000-01-01",
     "2026-11",
     "3월 (연도 확인 필요)",
     "상시",
     "확인 필요",
+    "2000-03-01",
+    "2000-01-01",
   ];
   assert.deepEqual(
     expected
@@ -31,6 +31,15 @@ test("deadline groups", () => {
     expected,
   );
 });
+test("only confirmed deadlines before today in Seoul are expired", (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: Date.parse("2026-11-19T14:59:59Z") });
+  assert.equal(deadlineLabel("2026-11-19"), "D-Day");
+  t.mock.timers.tick(1000);
+  assert.equal(deadlineLabel("2026-11-19"), "마감 지남");
+  assert.equal(deadlineLabel("2026-11-20"), "D-Day");
+  for (const value of ["2026-10", "10월 5일", "상시", "확인 필요", "2026-02-30"])
+    assert.equal(deadlineLabel(value), "");
+});
 test("legacy rows restore missing fields", () => {
   const { otherSchedule, ...legacy } = blank;
   assert.equal(
@@ -38,9 +47,21 @@ test("legacy rows restore missing fields", () => {
     "미입력",
   );
 });
+test("application status defaults to unchecked and survives storage round trips", () => {
+  const legacy = { ...blank, id: "old", createdAt: 1 };
+  assert.deepEqual(rowSchema.parse(legacy), { ...legacy, applied: false });
+  for (const applied of [true, false]) {
+    const saved = { ...legacy, applied };
+    assert.deepEqual(rowSchema.parse(JSON.parse(JSON.stringify(saved))), saved);
+  }
+});
 test("API validation and missing credentials", async () => {
+  const png = { mimeType: "image/png", data: "iVBORw0KGgo=" };
   for (const [body, code] of [
     [{}, 400],
+    [{ images: [] }, 400],
+    [{ images: [png, { ...png, data: "AAAA" }] }, 400],
+    [{ image: png }, 503],
     [{ text: "x".repeat(20001) }, 400],
     [{ image: { mimeType: "image/png", data: "AAAA" } }, 400],
     [{ text: "공고" }, 503],
@@ -54,4 +75,25 @@ test("API validation and missing credentials", async () => {
     );
     assert.equal(r.status, code);
   }
+});
+test("multiple poster pages are sent in order in one extraction", async (t) => {
+  const images = [
+    { mimeType: "image/png", data: "iVBORw0KGgo=" },
+    { mimeType: "image/jpeg", data: "/9j/" },
+  ];
+  const expected = { ...blank, title: "공모전", endDate: "2026-12-01" };
+  const requests = [];
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    requests.push(await new Request(url, init).json());
+    return Response.json({ candidates: [{ content: {
+      role: "model", parts: [{ text: JSON.stringify(expected) }],
+    } }] });
+  });
+  const result = await extract(new Request("https://test.local/api/extract", {
+    method: "POST", body: JSON.stringify({ images }),
+  }), { GEMINI_API_KEY: "test-placeholder" });
+  assert.equal(result.status, 200);
+  assert.equal(requests.length, 1);
+  assert.deepEqual(requests[0].contents[0].parts.slice(1), images.map(inlineData => ({ inlineData })));
+  assert.equal((await result.json()).endDate, expected.endDate);
 });

@@ -34,13 +34,15 @@ export const draftSchema = z.object({
   summary: z.string(),
 });
 export const rowSchema = draftSchema.extend({
+  applied: z.boolean().default(false),
   activityStartDate: z.string().default("미입력"),
   activityEndDate: z.string().default("미입력"),
   participationMethod: z.string().default("미입력"),
   otherSchedule: z.string().default("미입력"),
   source: z.string().default(""),
   id: z.string(),
-  createdAt: z.number(),
+  createdAt: z.number().nullish(),
+  customOrder: z.number().optional(),
 });
 export type Draft = z.infer<typeof draftSchema> & { source: string };
 export type Row = z.infer<typeof rowSchema>;

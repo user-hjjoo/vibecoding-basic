@@ -5,7 +5,8 @@ import { categories, rowSchema, type Row, type Draft } from "../shared/schemas";
 import { Cover, editions, type Edition } from "./components/Cover";
 import { Records } from "./components/Records";
 import { Entry } from "./components/Entry";
-import { compare, daysLeft } from "./lib/dates";
+import { daysLeft } from "./lib/dates";
+import { commitSort, initializeOrder, moveRow, prependRow, readMode, sortKey, sortLabels, sortRows, type SortMode } from "./lib/sort";
 import "./style.css";
 const key = "campus_deadline_rows_v1";
 const path =
@@ -20,30 +21,38 @@ function read(): Row[] {
 function App() {
   const [initial] = useState(() => {
     try {
-      return { rows: read(), error: "" };
+      return { rows: read(), mode: readMode(), error: "" };
     } catch {
       return {
         rows: [],
+        mode: "deadline" as const,
         error: "저장 목록을 읽을 수 없어요. 브라우저 저장소를 확인해 주세요.",
       };
     }
   });
   const [rows, setRows] = useState(initial.rows),
+    [sortMode, setSortMode] = useState<SortMode>(initial.mode),
     [error, setError] = useState(initial.error),
     [input, setInput] = useState(location.hash === "#new"),
     [cat, setCat] = useState("전체"),
     [date, setDate] = useState(""),
     [confirm, setConfirm] = useState(false);
+  const [draft, setDraft] = useState<{ mode: SortMode; rows: Row[] } | null>(null);
+  const editing = draft !== null;
+  const displayedMode = draft?.mode ?? sortMode;
   useEffect(() => {
     const hash = () => {
+      if (editing && location.hash === "#new") history.replaceState(null, "", "#list");
       setInput(location.hash === "#new");
       window.scrollTo(0, 0);
     };
     const sync = (e: StorageEvent) => {
-      if (e.key === key || !e.key) {
+      if (e.key === key || e.key === sortKey || !e.key) {
         try {
           setRows(read());
-          setError("");
+          setSortMode(readMode());
+          setDraft(null);
+          setError(editing ? "다른 탭에서 목록이 변경되어 편집을 종료했어요. 최신 목록에서 다시 편집해 주세요." : "");
         } catch {
           setError("저장 목록을 읽을 수 없어요.");
         }
@@ -55,7 +64,7 @@ function App() {
       window.removeEventListener("hashchange", hash);
       window.removeEventListener("storage", sync);
     };
-  }, []);
+  }, [editing]);
   function change(fn: (r: Row[]) => Row[]) {
     try {
       const next = fn(read());
@@ -83,10 +92,10 @@ function App() {
     ] as const)
       values[k] = v[k].trim() || "확인 필요";
     if (
-      !change((r) => [
-        ...r,
-        { ...values, id: crypto.randomUUID(), createdAt: Date.now() },
-      ])
+      !change((r) => prependRow(r,
+        { ...values, id: crypto.randomUUID(), createdAt: Date.now(), applied: false },
+        readMode()
+      ))
     )
       return false;
     setCat("전체");
@@ -94,12 +103,40 @@ function App() {
     location.hash = "list";
     return true;
   }
-  const visible = rows
-    .filter(
+  function selectSort(mode: SortMode) {
+    setDraft(current => current && ({
+      mode, rows: mode === "custom" ? initializeOrder(current.rows) : current.rows,
+    }));
+  }
+  function startEdit() {
+    if (cat !== "전체") return;
+    setConfirm(false);
+    setDraft({ mode: sortMode, rows: sortMode === "custom" ? initializeOrder(rows) : rows });
+  }
+  function applyEdit() {
+    if (!draft) return;
+    try {
+      const latest = read();
+      if (JSON.stringify(latest) !== JSON.stringify(rowSchema.array().parse(rows)) || readMode() !== sortMode) {
+        setRows(latest);
+        setSortMode(readMode());
+        setDraft(null);
+        setError("다른 탭에서 목록이 변경됐어요. 최신 목록에서 다시 편집해 주세요.");
+        return;
+      }
+      commitSort(localStorage, key, rows, draft.rows, draft.mode);
+      setRows(draft.rows);
+      setSortMode(draft.mode);
+      setDraft(null);
+      setError("");
+    } catch {
+      setError("정렬 방식을 저장하지 못했어요. 브라우저 저장 권한을 확인해 주세요.");
+    }
+  }
+  const visible = sortRows((draft?.rows ?? rows).filter(
       (r) =>
-        (cat === "전체" || r.category === cat) && (!date || r.endDate === date),
-    )
-    .sort(compare);
+        (cat === "전체" || r.category === cat) && (editing || !date || r.endDate === date),
+    ), displayedMode);
   const add = () => {
     location.hash = "new";
   };
@@ -123,12 +160,13 @@ function App() {
             <a className={!input ? "active" : ""} href="#list">
               저장 목록
             </a>
-            <a className={input ? "active" : ""} href="#new">
+            <a className={input ? "active" : ""} href={editing ? undefined : "#new"} aria-disabled={editing || undefined}>
               모집글 입력
             </a>
           </nav>
           <select
             aria-label="사이트 선택"
+            disabled={editing}
             className="edition"
             value={edition}
             onChange={(e) => location.assign("/" + e.target.value)}
@@ -147,6 +185,7 @@ function App() {
           <Entry save={save} />
         ) : (
           <>
+            <fieldset disabled={editing} className="cover-controls">
             <Cover
               edition={edition}
               rows={rows}
@@ -162,6 +201,7 @@ function App() {
                 scroll();
               }}
             />
+            </fieldset>
             <div className="stats">
               {[
                 ["전체 공고", rows.length],
@@ -189,7 +229,7 @@ function App() {
                   저장 목록 <small>{visible.length}</small>
                 </h2>
                 {rows.length > 0 && (
-                  <button onClick={() => setConfirm(!confirm)}>
+                  <button disabled={editing} onClick={() => setConfirm(!confirm)}>
                     목록 비우기
                   </button>
                 )}
@@ -211,19 +251,53 @@ function App() {
                 {["전체", ...categories].map((c) => (
                   <button
                     key={c}
+                    data-category={c === "전체" ? undefined : c}
                     aria-pressed={cat === c}
+                    disabled={editing}
                     onClick={() => setCat(c)}
                   >
                     {c}
                   </button>
                 ))}
-                {date && <button onClick={() => setDate("")}>{date} ×</button>}
+                {date && <button disabled={editing} onClick={() => setDate("")}>{date} ×</button>}
+              </div>
+              <div className="sort-controls">
+                {draft ? <>
+                  <label>정렬 방식
+                  <select value={draft.mode} onChange={e => selectSort(e.target.value as SortMode)}>
+                    {Object.entries(sortLabels).map(([mode, label]) =>
+                      <option key={mode} value={mode}>{label}</option>
+                    )}
+                  </select>
+                </label>
+                  <button className="primary" onClick={applyEdit}>적용</button>
+                  <button onClick={() => { setDraft(null); setError(""); }}>취소</button>
+                </> : <>
+                  <small>{sortLabels[sortMode]}</small>
+                  <button disabled={cat !== "전체"} onClick={startEdit}>편집</button>
+                  {cat !== "전체" && <span>편집은 전체 탭에서 할 수 있어요</span>}
+                </>}
               </div>
               <div className="paper">
                 <Records
+                  key={editing ? "editing" : "view"}
+                  editing={editing}
                   rows={visible}
+                  mode={displayedMode}
+                  move={draft?.mode === "custom"
+                    ? (id, target) => setDraft(current => current && ({
+                        ...current, rows: moveRow(current.rows, id, target),
+                      }))
+                    : undefined}
+                  setApplied={(id, applied) =>
+                    change((rows) => rows.map((row) =>
+                      row.id === id ? { ...row, applied } : row
+                    ))
+                  }
                   update={(v) =>
-                    change((r) => r.map((x) => (x.id === v.id ? v : x)))
+                    change((r) => r.map((x) =>
+                      x.id === v.id ? { ...v, applied: x.applied, customOrder: x.customOrder } : x
+                    ))
                   }
                   remove={(id) => change((r) => r.filter((x) => x.id !== id))}
                 />
@@ -243,6 +317,7 @@ function App() {
                         : "모집글이나 포스터로 첫 공고를 추가해 보세요."}
                     </p>
                     <button
+                      disabled={editing}
                       onClick={
                         rows.length
                           ? () => {

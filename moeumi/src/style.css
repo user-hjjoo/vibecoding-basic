@@ -333,6 +333,9 @@ th {
   background: #f0ede4;
 }
 th:first-child {
+  width: 5.3rem;
+}
+th:nth-child(2) {
   width: 20%;
 }
 th:last-child {
@@ -350,6 +353,97 @@ td button {
 }
 .record {
   cursor: pointer;
+}
+.sort-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: var(--quiet);
+  font-size: .9rem;
+}
+.sort-controls select {
+  margin-left: 8px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--paper);
+}
+.cover-controls { min-width: 0; padding: 0; border: 0; margin: 0; }
+.attachments li { display: flex; align-items: center; gap: .75rem; margin: .3rem 0; }
+.attachments li span { overflow-wrap: anywhere; }
+.attachments li button { flex-shrink: 0; }
+.sort-controls small { font-size: .875rem; }
+.reorderable th:first-child { width: 6.5rem; }
+.drag-handle {
+  min-width: 32px;
+  min-height: 36px;
+  padding: 4px;
+  vertical-align: middle;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+@media (pointer: coarse) {
+  .drag-handle { min-width: 44px; min-height: 44px; }
+}
+.record[data-drop-target="true"] { outline: 2px solid var(--coral); outline-offset: -2px; }
+.countdown {
+  display: inline-block;
+  color: #216342;
+  background: #e1f2e7;
+  border-radius: .35rem;
+  padding: 0 .35rem;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.countdown.urgent {
+  color: #a32d32;
+  background: #fbe6e5;
+}
+[data-category="대외활동"] { --category-tint: #f8d9cb; }
+[data-category="부트캠프"] { --category-tint: #d9e9f7; }
+[data-category="동아리"] { --category-tint: #d8eadb; }
+[data-category="공모전"] { --category-tint: #e7dcf3; }
+[data-category="채용"] { --category-tint: #f4e7ba; }
+[data-category="기타"] { --category-tint: #e4e3e0; }
+.category-tag,
+.filters button[data-category] {
+  background: var(--category-tint);
+}
+.category-tag {
+  display: inline-block;
+  border-radius: .45rem;
+  padding: .12rem .55rem;
+  font-weight: normal;
+}
+.filters button[data-category][aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.record.applied,
+.record.applied .name {
+  color: var(--quiet);
+}
+.applied-cell label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px;
+  cursor: pointer;
+}
+.applied-cell input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--coral);
+}
+.applied-cell span {
+  display: none;
 }
 .detail,
 .separator {
@@ -635,24 +729,27 @@ textarea {
     padding: 4px;
     border: 0;
   }
-  .record td:nth-child(n + 2):nth-child(-n + 6)::before {
+  .applied-cell span {
+    display: inline;
+  }
+  .record td:nth-child(n + 3):nth-child(-n + 7)::before {
     display: inline-block;
     min-width: 86px;
     color: var(--quiet);
   }
-  .record td:nth-child(2)::before {
+  .record td:nth-child(3)::before {
     content: "카테고리";
   }
-  .record td:nth-child(3)::before {
+  .record td:nth-child(4)::before {
     content: "주관사";
   }
-  .record td:nth-child(4)::before {
+  .record td:nth-child(5)::before {
     content: "모집 기간";
   }
-  .record td:nth-child(5)::before {
+  .record td:nth-child(6)::before {
     content: "활동 기간";
   }
-  .record td:nth-child(6)::before {
+  .record td:nth-child(7)::before {
     content: "참여 방식";
   }
   .detail,

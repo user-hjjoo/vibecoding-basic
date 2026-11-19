@@ -6,7 +6,7 @@ import {
   labels,
   type Draft,
 } from "../../shared/schemas";
-import { prepareImage } from "../lib/image";
+import { imageError, prepareImages } from "../lib/image";
 export function Fields({
   value,
   onChange,
@@ -47,7 +47,7 @@ export function Fields({
 export function Entry({ save }: { save: (v: Draft) => boolean }) {
   const [text, setText] = useState(""),
     [source, setSource] = useState(""),
-    [file, setFile] = useState<File>(),
+    [files, setFiles] = useState<File[]>([]),
     [draft, setDraft] = useState<Draft>(),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -63,7 +63,7 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
   async function run() {
     if (lock.current) return;
     setError("");
-    if (!text.trim() && !file) {
+    if (!text.trim() && !files.length) {
       setError("모집글이나 포스터를 입력해 주세요.");
       ref.current?.focus();
       return;
@@ -73,10 +73,10 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
     try {
       const body = JSON.stringify({
         text,
-        image: file ? await prepareImage(file) : undefined,
+        images: await prepareImages(files),
       });
       if (new Blob([body]).size > 4000000)
-        throw Error("이미지를 잘라 다시 첨부해 주세요.");
+        throw Error("첨부한 사진의 전체 용량이 커요. 사진 수를 줄이거나 필요한 부분만 잘라 주세요.");
       const res = await fetch("/api/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,24 +140,21 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
           <small>{text.length.toLocaleString()} / 20,000자</small>
           <div className="fields">
             <label>
-              포스터 첨부 · JPG, PNG (10MB)
+              포스터 첨부 · 여러 장 선택 가능 (JPG·PNG, 장당 10MB)
               <input
                 type="file"
+                multiple
                 accept="image/jpeg,image/png"
                 onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (
-                    f &&
-                    (!["image/jpeg", "image/png"].includes(f.type) ||
-                      f.size > 10 * 1024 * 1024)
-                  ) {
-                    setError("10MB 이하의 JPG 또는 PNG를 선택해 주세요.");
-                    e.target.value = "";
-                    setFile(undefined);
-                  } else {
-                    setFile(f);
-                    setError("");
+                  const selected = Array.from(e.currentTarget.files ?? []);
+                  e.currentTarget.value = "";
+                  const invalid = selected.find(file => imageError(file));
+                  if (invalid) {
+                    setError(invalid.name + " · " + imageError(invalid));
+                    return;
                   }
+                  setFiles(existing => [...existing, ...selected]);
+                  setError("");
                 }}
               />
             </label>
@@ -170,6 +167,23 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
               />
             </label>
           </div>
+          {files.length > 0 && (
+            <div className="attachments">
+              <strong>첨부한 사진 {files.length}장</strong>
+              <ol>
+                {files.map((file, index) => (
+                  <li key={index}>
+                    <span>{index + 1}. {file.name}</span>
+                    <button type="button" aria-label={`${index + 1}번째 사진 제외: ${file.name}`}
+                      onClick={() => {
+                        setFiles(current => current.filter((_, i) => i !== index));
+                        setError("");
+                      }}>제외</button>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
           <div className="actions">
             <button className="primary" onClick={run}>
               {busy ? "◌ 정리 중…" : "AI로 정리하기"}

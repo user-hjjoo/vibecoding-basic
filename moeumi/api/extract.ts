@@ -6,6 +6,17 @@ export default async function handler(
   req: IncomingMessage,
   res: ServerResponse,
 ) {
+  return handleExtract(req, res, {
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL: process.env.GEMINI_MODEL,
+  });
+}
+
+export async function handleExtract(
+  req: IncomingMessage,
+  res: ServerResponse,
+  env: Parameters<typeof extract>[1],
+) {
   const init = {
     method: req.method,
     body: req.method === "POST" ? Readable.toWeb(req) : undefined,
@@ -13,10 +24,7 @@ export default async function handler(
   };
   const reply = await extract(
     new Request("http://localhost/api/extract", init as RequestInit),
-    {
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-      GEMINI_MODEL: process.env.GEMINI_MODEL,
-    },
+    env,
   );
   res.writeHead(reply.status, {
     "Content-Type": "application/json; charset=utf-8",
