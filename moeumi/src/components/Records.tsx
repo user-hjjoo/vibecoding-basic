@@ -87,7 +87,7 @@ export function Records({
     const label = r.isExample && remaining >= 0 ? "" : deadlineLabel(r.endDate);
     const countdownClass = remaining >= 0
       ? (remaining <= 7 ? "countdown urgent" : "countdown")
-      : undefined;
+      : "countdown expired";
     return (
       <Fragment key={r.id}>
         {mode === "deadline" && isNaN(remaining) &&

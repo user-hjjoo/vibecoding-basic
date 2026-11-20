@@ -8,9 +8,9 @@
 .application-intro p { font-size: 80%; color: var(--quiet); }
 .application-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,280px),1fr)); gap: 16px; }
 .application-card, .answer-card, .application-summary {
-  min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--paper);
+  min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: var(--shadow);
 }
-.application-card { position: relative; border-top: 3px solid #b57b59; }
+.application-card { position: relative; border-top: 3px solid var(--accent); }
 .application-open {
   display: grid; width: 100%; height: 100%; gap: 6px; align-content: start; text-align: left;
   padding: 20px; background: transparent; border: 0;
@@ -19,14 +19,15 @@
 .application-open small, .question-meta, .answer-count, .form-notice { color: var(--quiet); }
 .application-delete { position: absolute; top: 15px; right: 12px; }
 .application-summary, .answer-card, .review-question { padding: clamp(14px, 3vw, 24px); margin: 14px 0; }
-.application-summary { background: #f4eee2; }
-.answer-card[data-done="true"] { background: #f0eee8; color: #625f56; }
-.progress-chip, .question-state { background: #e6ecdd; color: #385332; border-radius: 100px; padding: 3px 10px; font-size: .86rem; }
+.answer-card[data-done="true"] { color: var(--quiet); }
+.progress-chip, .question-state { background: var(--neutral); color: var(--quiet); border-radius: 100px; padding: 3px 10px; font-size: .86rem; }
+.progress-chip, .answer-card[data-done="true"] .question-state { background: var(--paper); color: var(--success); }
+.done-check input { accent-color: var(--success); }
 .app-actions { margin-top: 12px; }
 .application-entry label, .question-fields label, .application-summary label { display: grid; gap: 4px; margin: 8px 0; }
 .applications :is(input:not([type="checkbox"]), select, textarea) {
   min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 6px;
-  padding: 8px 10px; color: var(--ink); background: var(--paper);
+  padding: 8px 10px; color: var(--ink); background: var(--paper); box-shadow: var(--shadow);
 }
 .applications textarea { resize: vertical; }
 .application-summary select { max-width: 480px; }
@@ -37,9 +38,9 @@
 .form-requirements { margin: 10px 0; padding-left: 12px; border-left: 3px solid var(--line); }
 .form-requirements p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .question-fields label:first-child, .question-details-field { grid-column: 1 / -1; }
-.applications .question-fields [data-unknown="true"] { background: #fff2cf; border-color: #c5a24b; }
+.applications .question-fields [data-unknown="true"] { background: var(--table-head); border-color: var(--folder-edge); }
 .answer-count { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: .88rem; }
-.answer-count [data-over="true"] { color: #aa3027; }
+.answer-count [data-over="true"] { color: var(--error); }
 .done-check { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 620px) {
   .top nav { justify-content: space-between; column-gap: 8px; }
