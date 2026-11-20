@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { blank, rowSchema } from "../shared/schemas.ts";
-import { commitSort, initializeOrder, moveRow, prependRow, sortKey, sortRows } from "../src/lib/sort.ts";
+import { rowsKey } from "../src/lib/archive.ts";
+import { commitListEdit, initializeOrder, moveRow, prependRow, sortKey, sortRows } from "../src/lib/sort.ts";
 
 function row(id: string, endDate: string, createdAt?: number) {
   return rowSchema.parse({ ...blank, title: id, id, endDate, createdAt });
@@ -12,25 +13,30 @@ const records = [
   row("older deadline", "2000-01-01", 30), row("expired legacy", "1999-01-01")
 ];
 test("draft moves leave saved rows alone and a failed apply restores the previous mode", () => {
-  const saved = new Map([["rows", JSON.stringify(records)], [sortKey, "recent"]]);
+  const saved = new Map([[rowsKey, JSON.stringify(records)], [sortKey, "recent"]]);
   let full = true;
   const storage = {
     getItem: (key: string) => saved.get(key) ?? null,
     removeItem: (key: string) => { saved.delete(key); },
     setItem: (key: string, value: string) => {
-      if (full && key === "rows") throw Error("storage full");
+      if (full && key === rowsKey) throw Error("storage full");
       saved.set(key, value);
     },
   };
   const edited = moveRow(initializeOrder(records), "legacy", "soon");
-  assert.equal(saved.get("rows"), JSON.stringify(records));
-  assert.throws(() => commitSort(storage, "rows", records, edited, "custom"));
+  assert.equal(saved.get(rowsKey), JSON.stringify(records));
+  assert.throws(() => commitListEdit(storage, records, edited, "custom"));
   assert.equal(saved.get(sortKey), "recent");
-  assert.equal(saved.get("rows"), JSON.stringify(records));
+  assert.equal(saved.get(rowsKey), JSON.stringify(records));
   full = false;
-  commitSort(storage, "rows", records, edited, "custom");
+  commitListEdit(storage, records, edited, "custom");
   assert.equal(saved.get(sortKey), "custom");
-  assert.equal(saved.get("rows"), JSON.stringify(edited));
+  assert.equal(saved.get(rowsKey), JSON.stringify(edited));
+  const kept = records.slice(1);
+  commitListEdit(storage, records, kept, "recent");
+  assert.equal(saved.get(rowsKey), JSON.stringify(kept));
+  commitListEdit(storage, kept, [], "recent");
+  assert.equal(saved.get(rowsKey), "[]");
 });
 test("recent order sorts independently in open and expired groups, missing times last", () => {
   assert.deepEqual(sortRows(records, "recent").map(r => r.id),

@@ -1,13 +1,17 @@
 {
-  "rewrites": [
+  "redirects": [
     {
       "source": "/planner",
-      "destination": "/index.html"
+      "destination": "/archive",
+      "permanent": true
     },
     {
       "source": "/library",
-      "destination": "/index.html"
-    },
+      "destination": "/archive",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
     {
       "source": "/archive",
       "destination": "/index.html"

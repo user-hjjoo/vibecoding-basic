@@ -1,4 +1,5 @@
 import type { Row } from "../../shared/schemas.ts";
+import { writeArchiveRows } from "./notes.ts";
 import { compare, daysLeft, newestFirst } from "./dates.ts";
 
 export const sortLabels = {
@@ -9,13 +10,13 @@ export const sortLabels = {
 export type SortMode = keyof typeof sortLabels;
 export const sortKey = "campus_deadline_sort_v1";
 
-export function commitSort(storage: Pick<Storage, "getItem" | "setItem" | "removeItem">, rowsKey: string, original: Row[], edited: Row[], mode: SortMode) {
+export function commitListEdit(storage: Pick<Storage, "getItem" | "setItem" | "removeItem">, original: Row[], edited: Row[], mode: SortMode) {
   const previousMode = storage.getItem(sortKey);
   const modeChanged = previousMode !== mode;
   const orderChanged = edited.some((row, i) => row.customOrder !== original[i]?.customOrder);
   if (modeChanged) storage.setItem(sortKey, mode);
   try {
-    if (orderChanged) storage.setItem(rowsKey, JSON.stringify(edited));
+    if (original.length !== edited.length || orderChanged) writeArchiveRows(storage, original, edited);
   } catch (error) {
     if (modeChanged) {
       if (previousMode === null) storage.removeItem(sortKey);

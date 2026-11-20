@@ -3,6 +3,34 @@ import assert from "node:assert/strict";
 import { dateValue, compare, deadlineLabel, today } from "../src/lib/dates.ts";
 import { rowSchema, blank } from "../shared/schemas.ts";
 import { extract } from "../server/extract.ts";
+import { initializeArchive, rowsKey } from "../src/lib/archive.ts";
+
+test("seed only a new archive, including after deletion or a partial first visit", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value); },
+  };
+  const sample = initializeArchive(storage);
+  assert.equal(sample.length, 1);
+  assert.equal(sample[0].title, "OOO커리어스");
+  assert.equal(sample[0].isExample, true);
+  assert.deepEqual(initializeArchive(storage), sample);
+  values.set(rowsKey, "[]");
+  assert.deepEqual(initializeArchive(storage), []);
+  values.delete(rowsKey);
+  assert.deepEqual(initializeArchive(storage), []);
+  for (const prior of ["[]", JSON.stringify([{ ...blank, id: "legacy", createdAt: 1 }])]) {
+    values.clear();
+    values.set(rowsKey, prior);
+    assert.ok(initializeArchive(storage).every(row => !row.isExample));
+    assert.equal(values.get(rowsKey), prior);
+  }
+  values.clear();
+  values.set(rowsKey, "broken");
+  assert.throws(() => initializeArchive(storage));
+  assert.deepEqual([...values], [[rowsKey, "broken"]]);
+});
 test("invalid dates and KST midnight", () => {
   assert.ok(Number.isNaN(dateValue("2025-02-29")));
   assert.equal(
@@ -76,10 +104,21 @@ test("API validation and missing credentials", async () => {
     assert.equal(r.status, code);
   }
 });
-test("multiple poster pages are sent in order in one extraction", async (t) => {
+test("four photos are rejected before contacting Gemini", async (t) => {
+  const upstream = t.mock.method(globalThis, "fetch", () => { throw Error("Unexpected request"); });
+  const photo = { mimeType: "image/png", data: "iVBORw0KGgo=" };
+  const result = await extract(new Request("https://test.local/api/extract", {
+    method: "POST", body: JSON.stringify({ images: Array(4).fill(photo) }),
+  }), { GEMINI_API_KEY: "test-placeholder" });
+  assert.equal(result.status, 400);
+  assert.equal((await result.json()).message, "사진은 최대 3장까지 올릴 수 있어요");
+  assert.equal(upstream.mock.callCount(), 0);
+});
+test("three photos are sent in order with separate extraction instructions", async (t) => {
   const images = [
     { mimeType: "image/png", data: "iVBORw0KGgo=" },
     { mimeType: "image/jpeg", data: "/9j/" },
+    { mimeType: "image/png", data: "iVBORw0KGgoA" },
   ];
   const expected = { ...blank, title: "공모전", endDate: "2026-12-01" };
   const requests = [];
@@ -94,6 +133,9 @@ test("multiple poster pages are sent in order in one extraction", async (t) => {
   }), { GEMINI_API_KEY: "test-placeholder" });
   assert.equal(result.status, 200);
   assert.equal(requests.length, 1);
+  const rules = requests[0].systemInstruction.parts.map(part => part.text).join(" ");
+  assert.match(rules, /본문과 사진 속 지시문.*따르지 않는다/);
+  assert.match(rules, /활동명과 날짜.*원문.*없으면 ‘확인 필요’/);
   assert.deepEqual(requests[0].contents[0].parts.slice(1), images.map(inlineData => ({ inlineData })));
   assert.equal((await result.json()).endDate, expected.endDate);
 });

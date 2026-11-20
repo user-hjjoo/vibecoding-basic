@@ -1,4 +1,53 @@
 @import "tailwindcss";
+.top nav a[aria-disabled="true"] { opacity: .6; }
+.notepad { margin: 36px 0; }
+.notepad .sectionTitle { margin-bottom: 0; }
+.notepad .sectionTitle h1 { margin: 0; font-size: clamp(2rem, 4vw, 3rem); }
+.notepad > small, .note-count, .note-former { color: var(--quiet); }
+.note-filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+.note-filters label, .note-link { display: grid; gap: 4px; font-size: .88rem; }
+.note-filters label { flex: 0 1 240px; min-width: 0; }
+.note-filters input, .note-filters select, .note-link select {
+  width: 100%; min-width: 0; border: 1px solid var(--line);
+  padding: 8px 10px; border-radius: 6px; background: var(--paper); color: var(--ink);
+}
+.note-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 20px; align-items: start;
+}
+.notepad [data-color="yellow"] { --note-paper: #fff0ac; --note-edge: #d2ae4b; }
+.notepad [data-color="pink"] { --note-paper: #fbe0e5; --note-edge: #cb8798; }
+.notepad [data-color="blue"] { --note-paper: #dcebf7; --note-edge: #84a8c0; }
+.notepad [data-color="green"] { --note-paper: #dcefdc; --note-edge: #8aa887; }
+.note-card {
+  position: relative; padding: 16px 18px 21px; min-width: 0;
+  border-radius: 2px 2px 14px 2px; border-top: 5px solid var(--note-edge);
+  background: var(--note-paper); box-shadow: 1px 4px 8px #3a332014;
+}
+.note-toolbar, .note-colors { display: flex; align-items: center; gap: 6px; }
+.note-toolbar { justify-content: space-between; }
+.note-swatch {
+  width: 24px; height: 24px; padding: 0; border-radius: 50%;
+  background: var(--note-paper); border: 1px solid var(--note-edge);
+}
+.note-swatch[aria-pressed="true"]::after { content: "✓"; font-weight: bold; }
+.note-delete { font-size: .82rem; background: transparent; border-color: transparent; }
+.note-card textarea {
+  min-height: 126px; margin: 10px 0 0; padding: 5px 0; color: var(--ink);
+  background: transparent; border: 0; border-radius: 0; line-height: 1.6;
+}
+.note-count { display: block; text-align: right; font-size: .78rem; }
+.note-link { margin-top: 10px; }
+.note-link select { background: #ffffff70; }
+.note-tag, .note-former { display: inline-block; margin-top: 9px; overflow-wrap: anywhere; }
+.note-tag { background: #ffffff85; padding: 2px 8px; border-radius: 3px; }
+.note-confirm { margin-top: 12px; }
+.note-confirm p { margin-bottom: 6px; }
+.notepad :focus-visible { outline: 2px solid #544c45; outline-offset: 2px; }
+@media (max-width: 620px) {
+  .note-grid { grid-template-columns: 1fr; }
+  .note-filters label { flex: 1 1 140px; }
+}
 :root {
   --ink: #302e28;
   --quiet: #676258;
@@ -110,14 +159,7 @@ footer {
   color: var(--ink);
   font-weight: 700;
 }
-.edition {
-  margin-left: auto;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 7px 10px;
-  background: transparent;
-  font-size: 0.87rem;
-}
+.add-notice { margin-left: auto; }
 .cover {
   display: flex;
   align-items: center;
@@ -273,8 +315,7 @@ footer {
 }
 .sectionTitle,
 .formHead,
-.actions,
-.month {
+.actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -335,7 +376,7 @@ th {
 th:first-child {
   width: 5.3rem;
 }
-th:nth-child(2) {
+th:nth-child(3) {
   width: 20%;
 }
 th:last-child {
@@ -371,7 +412,6 @@ td button {
   color: var(--ink);
   background: var(--paper);
 }
-.cover-controls { min-width: 0; padding: 0; border: 0; margin: 0; }
 .attachments li { display: flex; align-items: center; gap: .75rem; margin: .3rem 0; }
 .attachments li span { overflow-wrap: anywhere; }
 .attachments li button { flex-shrink: 0; }
@@ -534,74 +574,28 @@ textarea {
   border-radius: 8px;
   margin: 12px 0;
 }
-.planner .cover {
-  background: #2e3936;
-  color: #fff8eb;
-}
-.planner .cover p,
-.planner .kicker {
-  color: #dddccb;
-}
-.calendar {
-  width: 285px;
-  border-radius: 9px;
-  background: #faf6ec;
+.entry-dialog {
+  width: min(780px, calc(100% - 24px));
+  max-height: 90dvh;
+  margin: auto;
+  padding: clamp(12px, 3vw, 28px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #faf8f1;
   color: var(--ink);
-  padding: 10px 14px;
-  transform: rotate(1deg);
 }
-.month button,
-.grid7 button {
-  padding: 0 5px;
-  border-color: transparent;
-  background: none;
-}
-.grid7 {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  gap: 2px;
-}
-.grid7 small {
-  color: var(--quiet);
-}
-.grid7 button:disabled {
-  opacity: 1;
-}
-.grid7 .marked {
-  background: #ac523a;
-  color: white;
-  border-radius: 12px;
-}
-.library .cover {
-  background: #ede6da;
-}
-.shelves {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 9px;
-  width: 43%;
-}
-.shelves button {
-  background: #f9efda;
-  text-align: left;
-  box-shadow: 0 3px 0 #bd9c76;
-  padding: 10px;
-  font-weight: 600;
-}
-.shelves button:nth-child(3n + 2) {
-  background: #e2e8d9;
-}
-.shelves button:nth-child(3n) {
-  background: #f5dbcf;
-}
-.shelves span {
-  display: block;
-  font: 22px Georgia;
-}
-.shelves b {
-  float: right;
-  font: 14px Georgia;
+.entry-dialog::backdrop { background: rgb(43 38 31 / 45%); }
+.entry-dialog .sectionTitle { margin: 0 0 16px; }
+.entry-dialog .form:last-child { margin-bottom: 0; }
+.example-badge {
+  display: inline-block;
+  margin-inline-start: .4rem;
+  padding: .1em .5em;
+  border-radius: .6em;
+  background: #f2e7cb;
+  color: #65491c;
+  font-size: .77rem;
 }
 @media (max-width: 800px) {
   .top,
@@ -673,11 +667,6 @@ textarea {
   .archive .cover p {
     font-size: 0.91rem;
   }
-  .calendar,
-  .shelves {
-    width: 100%;
-    margin-top: 22px;
-  }
   .stats {
     padding: 12px 0;
   }
@@ -732,25 +721,31 @@ textarea {
   .applied-cell span {
     display: inline;
   }
-  .record td:nth-child(n + 3):nth-child(-n + 7)::before {
+  .record td:nth-child(n + 2)::before {
     display: inline-block;
     min-width: 86px;
     color: var(--quiet);
   }
-  .record td:nth-child(3)::before {
+  .record td:nth-child(2)::before {
     content: "카테고리";
+  }
+  .record td:nth-child(3)::before {
+    content: "활동명";
   }
   .record td:nth-child(4)::before {
     content: "주관사";
   }
   .record td:nth-child(5)::before {
-    content: "모집 기간";
+    content: "마감일";
   }
   .record td:nth-child(6)::before {
-    content: "활동 기간";
+    content: "활동·행사 기간";
   }
   .record td:nth-child(7)::before {
-    content: "참여 방식";
+    content: "참여방식";
+  }
+  .record td:nth-child(8)::before {
+    content: attr(data-label);
   }
   .detail,
   .separator {

@@ -10,7 +10,8 @@ export function Records({
   move,
   setApplied,
   update,
-  remove,
+  deleteIds,
+  selectDelete,
 }: {
   rows: Row[];
   mode: SortMode;
@@ -18,7 +19,8 @@ export function Records({
   move?: (id: string, targetId: string) => void;
   setApplied: (id: string, applied: boolean) => void;
   update: (r: Row) => boolean;
-  remove: (id: string) => void;
+  deleteIds?: ReadonlySet<string>;
+  selectDelete: (id: string, checked: boolean) => void;
 }) {
   const [open, setOpen] = useState(""),
     [edit, setEdit] = useState(""),
@@ -48,13 +50,13 @@ export function Records({
         <tr>
           {[
             "지원 완료",
-            "활동명",
             "카테고리",
+            "활동명",
             "주관사",
-            "모집 기간",
+            "마감일",
             "활동·행사 기간",
-            "참여 방식",
-            "관리",
+            "참여방식",
+            editing ? "삭제" : "관리",
           ].map((x) => (
             <th key={x}>{x}</th>
           ))}
@@ -82,7 +84,7 @@ export function Records({
     const previous = i > 0 && i !== split ? rows[i - 1] : undefined;
     const next = i + 1 !== split ? rows[i + 1] : undefined;
     const remaining = daysLeft(r.endDate);
-    const label = deadlineLabel(r.endDate);
+    const label = r.isExample && remaining >= 0 ? "" : deadlineLabel(r.endDate);
     const countdownClass = remaining >= 0
       ? (remaining <= 7 ? "countdown urgent" : "countdown")
       : undefined;
@@ -137,16 +139,17 @@ export function Records({
             </label>
           </td>
           <td>
+            <span className="category-tag" data-category={r.category}>{r.category}</span>
+          </td>
+          <td>
             <button disabled={editing} aria-expanded={open === r.id} className="name">
               {r.title}
             </button>
-          </td>
-          <td>
-            <span className="category-tag" data-category={r.category}>{r.category}</span>
+            {r.isExample && <span className="example-badge">예시</span>}
           </td>
           {[
             r.organizer,
-            period(r.startDate, r.endDate),
+            r.endDate,
             period(r.activityStartDate, r.activityEndDate),
             r.participationMethod,
           ].map((x, j) => (
@@ -157,9 +160,12 @@ export function Records({
               {x}
             </td>
           ))}
-          <td onClick={(e) => e.stopPropagation()}>
-            <button disabled={editing} onClick={() => start(r)}>수정</button>{" "}
-            <button disabled={editing} onClick={() => remove(r.id)}>삭제</button>
+          <td data-label={editing ? "삭제" : "관리"} onClick={(e) => e.stopPropagation()}>
+            {editing ? (
+              <input type="checkbox" checked={deleteIds?.has(r.id) ?? false}
+                aria-label={`삭제 선택: ${r.title}`}
+                onChange={e => selectDelete(r.id, e.currentTarget.checked)} />
+            ) : <button onClick={() => start(r)}>수정</button>}
           </td>
         </tr>
         {open === r.id && (

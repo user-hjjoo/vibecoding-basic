@@ -34,6 +34,7 @@ export const draftSchema = z.object({
   summary: z.string(),
 });
 export const rowSchema = draftSchema.extend({
+  isExample: z.boolean().optional(),
   applied: z.boolean().default(false),
   activityStartDate: z.string().default("미입력"),
   activityEndDate: z.string().default("미입력"),

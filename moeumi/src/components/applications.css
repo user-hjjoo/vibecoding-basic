@@ -1,0 +1,47 @@
+.applications { margin: 36px 0; }
+.applications h1 { font-size: clamp(1.9rem, 4vw, 3rem); font-weight: 700; letter-spacing: -.045em; }
+.application-heading, .app-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.application-heading { justify-content: space-between; margin: 12px 0; }
+.applications h1, .applications h2, .application-open { overflow-wrap: anywhere; }
+.application-heading h2, .answer-card > h2 { font-size: 1.16rem; font-weight: 650; }
+.application-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,280px),1fr)); gap: 16px; }
+.application-card, .answer-card, .application-summary {
+  min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--paper);
+}
+.application-card { position: relative; border-top: 3px solid #b57b59; }
+.application-open {
+  display: grid; width: 100%; height: 100%; gap: 6px; align-content: start; text-align: left;
+  padding: 20px; background: transparent; border: 0;
+}
+.application-open strong { font-size: 1.2rem; padding-right: 50px; }
+.application-open small, .question-meta, .answer-count, .form-notice { color: var(--quiet); }
+.application-delete { position: absolute; top: 15px; right: 12px; }
+.application-summary, .answer-card, .review-question { padding: clamp(14px, 3vw, 24px); margin: 14px 0; }
+.application-summary { background: #f4eee2; }
+.answer-card[data-done="true"] { background: #f0eee8; color: #625f56; }
+.progress-chip, .question-state { background: #e6ecdd; color: #385332; border-radius: 100px; padding: 3px 10px; font-size: .86rem; }
+.app-actions { margin-top: 12px; }
+.application-entry label, .question-fields label, .application-summary label { display: grid; gap: 4px; margin: 8px 0; }
+.applications :is(input:not([type="checkbox"]), select, textarea) {
+  min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 6px;
+  padding: 8px 10px; color: var(--ink); background: var(--paper);
+}
+.applications textarea { resize: vertical; }
+.application-summary select { max-width: 480px; }
+.form-notice { margin: 18px 0 6px; font-size: .83rem; }
+.review-question { border: 1px solid var(--line); border-radius: 8px; }
+.review-question legend { padding: 0 6px; }
+.question-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; }
+.form-requirements { margin: 10px 0; padding-left: 12px; border-left: 3px solid var(--line); }
+.form-requirements p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.question-fields label:first-child, .question-details-field { grid-column: 1 / -1; }
+.applications .question-fields [data-unknown="true"] { background: #fff2cf; border-color: #c5a24b; }
+.answer-count { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: .88rem; }
+.answer-count [data-over="true"] { color: #aa3027; }
+.done-check { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 620px) {
+  .top nav { justify-content: space-between; column-gap: 8px; }
+  .top nav a { white-space: nowrap; }
+  .question-fields { grid-template-columns: 1fr; }
+  .applications .sectionTitle { flex-wrap: wrap; }
+}

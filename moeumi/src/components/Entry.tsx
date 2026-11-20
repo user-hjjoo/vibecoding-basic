@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   blank,
   categories,
@@ -44,7 +44,7 @@ export function Fields({
     </div>
   );
 }
-export function Entry({ save }: { save: (v: Draft) => boolean }) {
+export function Entry({ save, close }: { save: (v: Draft) => boolean; close: () => void }) {
   const [text, setText] = useState(""),
     [source, setSource] = useState(""),
     [files, setFiles] = useState<File[]>([]),
@@ -54,6 +54,17 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
   const ref = useRef<HTMLTextAreaElement>(null),
     lock = useRef(false),
     review = useRef<HTMLElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const element = dialog.current!;
+    element.showModal();
+    ref.current?.focus();
+    return () => {
+      request.current?.abort();
+      element.close();
+    };
+  }, []);
   function show(value: Draft) {
     setDraft(value);
     requestAnimationFrame(() =>
@@ -69,6 +80,8 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
       return;
     }
     lock.current = true;
+    const controller = new AbortController();
+    request.current = controller;
     setBusy(true);
     try {
       const body = JSON.stringify({
@@ -81,7 +94,7 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,
-        signal: AbortSignal.timeout(50000),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(50000)]),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok)
@@ -91,8 +104,9 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
               ? "이미지를 줄여 주세요."
               : "서버 연결을 확인해 주세요."),
         );
-      show({ ...draftSchema.parse(data), source });
+      if (!controller.signal.aborted) show({ ...draftSchema.parse(data), source });
     } catch (e) {
+      if (controller.signal.aborted) return;
       setError(
         e instanceof Error && e.name === "Error"
           ? e.message
@@ -104,9 +118,11 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
     }
   }
   return (
-    <>
+    <dialog ref={dialog} className="entry-dialog" aria-labelledby="entry-title"
+      onCancel={event => { event.preventDefault(); close(); }}>
       <div className="sectionTitle">
-        <h1>모집글 입력</h1>
+        <h2 id="entry-title">모집공고 추가</h2>
+        <button type="button" onClick={close}>닫기</button>
       </div>
       <section className="paper form">
         <fieldset disabled={busy}>
@@ -140,7 +156,7 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
           <small>{text.length.toLocaleString()} / 20,000자</small>
           <div className="fields">
             <label>
-              포스터 첨부 · 여러 장 선택 가능 (JPG·PNG, 장당 10MB)
+              포스터 첨부 · 최대 3장 (JPG·PNG, 장당 10MB)
               <input
                 type="file"
                 multiple
@@ -148,13 +164,14 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
                 onChange={(e) => {
                   const selected = Array.from(e.currentTarget.files ?? []);
                   e.currentTarget.value = "";
-                  const invalid = selected.find(file => imageError(file));
+                  const accepted = selected.slice(0, 3 - files.length);
+                  const invalid = accepted.find(file => imageError(file));
                   if (invalid) {
                     setError(invalid.name + " · " + imageError(invalid));
                     return;
                   }
-                  setFiles(existing => [...existing, ...selected]);
-                  setError("");
+                  setFiles([...files, ...accepted]);
+                  setError(selected.length > accepted.length ? "사진은 최대 3장까지 올릴 수 있어요" : "");
                 }}
               />
             </label>
@@ -184,8 +201,9 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
               </ol>
             </div>
           )}
+          <small id="ai-transfer-notice">AI로 정리하면 모집글 본문과 첨부 사진이 Google Gemini로 전송돼요. 출처 메모는 이 브라우저에만 저장돼요.</small>
           <div className="actions">
-            <button className="primary" onClick={run}>
+            <button className="primary" aria-describedby="ai-transfer-notice" onClick={run}>
               {busy ? "◌ 정리 중…" : "AI로 정리하기"}
             </button>
             <button
@@ -213,7 +231,7 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
                   setError("활동명을 입력해 주세요.");
                   return;
                 }
-                save(draft);
+                if (!save(draft)) setError("저장하지 못했어요. 브라우저 저장 권한과 남은 공간을 확인해 주세요.");
               }}
             >
               저장
@@ -222,6 +240,6 @@ export function Entry({ save }: { save: (v: Draft) => boolean }) {
           </div>
         </section>
       )}
-    </>
+    </dialog>
   );
 }
