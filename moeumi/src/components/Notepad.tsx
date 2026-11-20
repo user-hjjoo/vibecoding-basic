@@ -115,7 +115,7 @@ export function Notepad({ rows, beforeLeave }: Props) {
 
   return <section className="notepad" aria-labelledby="notes-title">
     <div className="sectionTitle">
-      <h1 id="notes-title">메모장</h1>
+      <h1 id="notes-title">메모장 <span className="title-emoji" aria-hidden="true">📝</span></h1>
       <button className="primary" ref={addButton} disabled={!book || full} onClick={add}>+ 메모 추가</button>
     </div>
     <small>메모는 이 브라우저에만 저장돼요</small>
@@ -160,19 +160,20 @@ export function Notepad({ rows, beforeLeave }: Props) {
             }} />
           <small className="note-count">{content.length} / {textLimit}자</small>
           <label className="note-link">연결할 공고
-            <select value={note.rowId ?? ""} onChange={event => {
-              const id = event.target.value;
+            <select value={note.rowId !== null ? `row:${note.rowId}` : note.deletedTitle ? "deleted" : ""} onChange={event => {
+              const value = event.target.value;
+              const id = value.startsWith("row:") ? value.slice(4) : null;
               commit((latest, time) => {
                 const current = latest.notes.find(item => item.id === note.id);
-                if (!current) return;
-                const exists = id && readRows(localStorage).some(row => row.id === id);
-                current.rowId = exists ? id : null;
-                current.deletedTitle = id && !exists ? titles.get(id) : undefined;
+                if (!current || (id !== null && !readRows(localStorage).some(row => row.id === id))) return;
+                current.rowId = id;
+                delete current.deletedTitle;
                 current.updatedAt = time;
               });
             }}>
+              {note.rowId === null && note.deletedTitle && <option value="deleted" disabled>공고 삭제로 연결 해제됨</option>}
               <option value="">연결 안 함</option>
-              {rows.map(row => <option key={row.id} value={row.id}>{row.title}</option>)}
+              {rows.map(row => <option key={row.id} value={`row:${row.id}`}>{row.title}</option>)}
             </select>
           </label>
           {linkedTitle && <small className="note-tag">{linkedTitle}</small>}

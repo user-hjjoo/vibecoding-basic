@@ -1,8 +1,27 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: "Noto Serif KR";
+  src: url("/fonts/noto-serif-kr-title-bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Moeumi Title";
+  src: url("/fonts/moeumi-title-extrabold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+}
+
 .top nav a[aria-disabled="true"] { opacity: .6; }
 .notepad { margin: 36px 0; }
 .notepad .sectionTitle { margin-bottom: 0; }
-.notepad .sectionTitle h1 { margin: 0; font-size: clamp(2rem, 4vw, 3rem); }
+.notepad .sectionTitle h1 { margin: 0; }
+.notepad .sectionTitle h1,
+.applications .application-intro h1 { font-size: clamp(2rem, 4vw, 3rem); }
 .notepad > small, .note-count, .note-former { color: var(--quiet); }
 .note-filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
 .note-filters label, .note-link { display: grid; gap: 4px; font-size: .88rem; }
@@ -49,6 +68,7 @@
   .note-filters label { flex: 1 1 140px; }
 }
 :root {
+  --font-title: "Noto Serif KR";
   --ink: #302e28;
   --quiet: #676258;
   --line: #dcd7cc;
@@ -187,12 +207,23 @@ footer {
 }
 .cover h1,
 .sectionTitle h1 {
-  font:
-    500 clamp(2.8rem, 4.8vw, 4.5rem)/1.16 "Nanum Myeongjo",
-    Batang,
-    serif;
-  letter-spacing: -0.075em;
+  font-size: clamp(2.8rem, 4.8vw, 4.5rem);
+  line-height: 1.16;
+  letter-spacing: -0.045em;
   margin: 13px 0;
+}
+.cover h1,
+.notepad > .sectionTitle h1,
+.applications > .sectionTitle h1 {
+  font-family: var(--font-title), "Moeumi Title", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-weight: 700;
+}
+#records > .sectionTitle > h2 {
+  font-family: var(--font-title), Inter, "Malgun Gothic", sans-serif;
+  font-weight: 700;
+}
+.title-emoji {
+  font: 0.7em/1 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", emoji;
 }
 .cover p {
   font-size: 1rem;

@@ -84,7 +84,12 @@ export function Applications({ rows, beforeLeave }: {
         validateLink(app);
         app.updatedAt = Date.now();
       })} /> : <>
-      <div className="sectionTitle"><h1>지원서 매니저</h1><button className="primary"
+      <div className="sectionTitle">
+        <div className="application-intro">
+          <h1>지원서 매니저 <span className="title-emoji" aria-hidden="true">📋</span></h1>
+          <p>지원서 폼이 있다면 텍스트를 긁어서 붙여보세요</p>
+        </div>
+        <button className="primary"
         disabled={!book || book.applications.length >= maxForms}
         onClick={() => { setError(""); setAdding(true); }}>+ 지원서 추가</button></div>
       {book && book.applications.length >= maxForms && <p>지원서는 30개까지 만들 수 있어요.</p>}

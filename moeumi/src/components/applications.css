@@ -4,6 +4,8 @@
 .application-heading { justify-content: space-between; margin: 12px 0; }
 .applications h1, .applications h2, .application-open { overflow-wrap: anywhere; }
 .application-heading h2, .answer-card > h2 { font-size: 1.16rem; font-weight: 650; }
+.application-intro h1 { margin-bottom: 0; }
+.application-intro p { font-size: 80%; color: var(--quiet); }
 .application-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,280px),1fr)); gap: 16px; }
 .application-card, .answer-card, .application-summary {
   min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--paper);

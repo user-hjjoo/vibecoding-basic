@@ -58,7 +58,7 @@ export function ApplicationDetail({ app, rows, back, update, answer, flush }: {
       const state = q.done ? "완료" : q.answer ? "작성 중" : "작성 전";
       return <article key={q.id} className="answer-card" data-done={q.done}
         onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) flush(); }}>
-        <div className="application-heading"><h2>{index + 1}. {q.prompt}</h2><span className="question-state">{state}</span></div>
+        <div className="application-heading"><h2>Q{index + 1}. {q.prompt}</h2><span className="question-state">{state}</span></div>
         <p className="question-meta">{q.required === "확인 필요" ? "필수 여부 확인 필요" : q.required} · {typeof q.limit === "number" ? q.limit + "자" : q.limit} · {q.basis === "확인 필요" ? "기준 확인 필요" : q.basis}</p>
         {q.details && editing !== q.id && <div className="form-requirements"><strong>문항별 세부 요구사항</strong><p>{q.details}</p></div>}
         {editing === q.id && <QuestionEditor initial={q} cancel={() => setEditing(null)} save={fields => {
